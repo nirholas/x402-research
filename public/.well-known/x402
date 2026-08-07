@@ -1,0 +1,416 @@
+{
+  "x402Version": 1,
+  "name": "x402-research",
+  "description": "Scholarly search over arXiv, Crossref, and Semantic Scholar — papers, citation graphs, formatted bibliographies",
+  "homepage": "https://nirholas.github.io/x402-research/",
+  "repository": "https://github.com/nirholas/x402-research",
+  "contact": "nichxbt@gmail.com",
+  "skill": "https://github.com/nirholas/x402-research/blob/main/skill.md",
+  "openapi": "https://github.com/nirholas/x402-research/blob/main/openapi.json",
+  "payment": {
+    "note": "Pay in USDC on Base or Solana — your client picks the rail.",
+    "facilitator": "https://x402.org/facilitator",
+    "rails": [
+      {
+        "rail": "evm",
+        "network": "base-sepolia",
+        "asset": "USDC",
+        "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+        "decimals": 6
+      },
+      {
+        "rail": "solana",
+        "network": "solana",
+        "asset": "USDC",
+        "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+        "decimals": 6
+      }
+    ]
+  },
+  "resources": [
+    {
+      "resource": "GET /search",
+      "description": "Ranked scholarly search across arXiv, Crossref, and Semantic Scholar",
+      "price": "$0.002",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "asset": "USDC",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "2000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "2000",
+          "mimeType": "application/json"
+        }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "query",
+          "count",
+          "papers",
+          "sources",
+          "retrievedAt"
+        ],
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Equals `papers.length`."
+          },
+          "papers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "title",
+                "authors",
+                "source"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "authors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "year": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "venue": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Journal, conference, or `arXiv`."
+                },
+                "doi": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Feed straight into POST /bibliography."
+                },
+                "arxivId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri"
+                },
+                "abstract": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "citationCount": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "arxiv",
+                    "crossref",
+                    "semantic-scholar"
+                  ],
+                  "description": "Which upstream contributed the base record."
+                }
+              }
+            }
+          },
+          "sources": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "`ok`, `rate-limited`, or an error string, keyed by upstream."
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    {
+      "resource": "GET /paper/:id",
+      "description": "Paper metadata, abstract, TL;DR, and a two-sided citation graph",
+      "price": "$0.003",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "asset": "USDC",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "3000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "3000",
+          "mimeType": "application/json"
+        }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "id",
+          "resolvedAs",
+          "source",
+          "retrievedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The identifier you passed."
+          },
+          "resolvedAs": {
+            "type": "string",
+            "description": "How it was resolved upstream, e.g. `DOI:10.1038/nature14539`."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "abstract": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Abstract, falling back to the TL;DR."
+          },
+          "tldr": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "venue": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publicationDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "externalIds": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "fieldsOfStudy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "openAccessPdf": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "citationGraph": {
+            "type": "object",
+            "properties": {
+              "citationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "referenceCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "influentialCitationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "topCitations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "references": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "partial": {
+            "type": "boolean",
+            "description": "True when the Crossref fallback was used (no citation lists)."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "semantic-scholar",
+              "crossref"
+            ]
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    {
+      "resource": "POST /bibliography",
+      "description": "Formatted BibTeX and APA entries for a list of DOIs",
+      "price": "$0.005",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "asset": "USDC",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "5000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "5000",
+          "mimeType": "application/json"
+        }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "format",
+          "count",
+          "entries",
+          "retrievedAt"
+        ],
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "bibtex",
+              "apa",
+              "both"
+            ]
+          },
+          "count": {
+            "type": "integer"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "doi",
+                "status"
+              ],
+              "properties": {
+                "doi": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ok",
+                    "error"
+                  ]
+                },
+                "bibtex": {
+                  "type": "string",
+                  "description": "BibTeX record from Crossref's transform."
+                },
+                "apa": {
+                  "type": "string",
+                  "description": "APA 7 reference built from structured Crossref metadata."
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Present when `status` is `error`."
+                }
+              }
+            }
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  ]
+}

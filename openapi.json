@@ -1,0 +1,901 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-research",
+    "version": "0.1.0",
+    "description": "Scholarly search over arXiv, Crossref, and Semantic Scholar — papers, citation graphs, formatted bibliographies\n\nEvery paid route returns the purchased artifact in the 200 response body. Pay in USDC on Base or Solana — your client picks the rail.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "contact": {
+      "name": "nirholas",
+      "email": "nichxbt@gmail.com",
+      "url": "https://github.com/nirholas/x402-research"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4021",
+      "description": "Local development"
+    },
+    {
+      "url": "{baseUrl}",
+      "description": "Deployed instance",
+      "variables": {
+        "baseUrl": {
+          "default": "http://localhost:4021"
+        }
+      }
+    }
+  ],
+  "externalDocs": {
+    "description": "Docs site",
+    "url": "https://nirholas.github.io/x402-research/"
+  },
+  "tags": [
+    {
+      "name": "paid",
+      "description": "x402-paid routes. Artifact returned in the 200 body."
+    },
+    {
+      "name": "free",
+      "description": "Unpaid metadata routes."
+    }
+  ],
+  "paths": {
+    "/search": {
+      "get": {
+        "operationId": "search",
+        "summary": "Ranked scholarly search across arXiv, Crossref, and Semantic Scholar ($0.002)",
+        "description": "Ranked scholarly search across arXiv, Crossref, and Semantic Scholar\n\nPaid route — $0.002 in USDC. Pay on Base (EVM) or Solana; the 402 challenge lists both rails.",
+        "tags": [
+          "paid"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Free-text search terms, passed to all three upstreams.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "attention is all you need"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Papers to return, 1–25. Each source is asked for this many before merging. Default 10.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Merged, de-duplicated, citation-ranked papers with authors, venue, DOI, abstract, and citation count, plus a per-source status block",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "query",
+                    "count",
+                    "papers",
+                    "sources",
+                    "retrievedAt"
+                  ],
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Equals `papers.length`."
+                    },
+                    "papers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "title",
+                          "authors",
+                          "source"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string"
+                          },
+                          "authors": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "year": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "venue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "Journal, conference, or `arXiv`."
+                          },
+                          "doi": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "Feed straight into POST /bibliography."
+                          },
+                          "arxivId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "url": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "abstract": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "citationCount": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "arxiv",
+                              "crossref",
+                              "semantic-scholar"
+                            ],
+                            "description": "Which upstream contributed the base record."
+                          }
+                        }
+                      }
+                    },
+                    "sources": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "`ok`, `rate-limited`, or an error string, keyed by upstream."
+                    },
+                    "retrievedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "example": {
+                  "query": "attention is all you need",
+                  "count": 3,
+                  "papers": [
+                    {
+                      "title": "Attention Is All You Need",
+                      "authors": [
+                        "Ashish Vaswani",
+                        "Noam Shazeer",
+                        "Niki Parmar",
+                        "Jakob Uszkoreit"
+                      ],
+                      "year": 2017,
+                      "venue": "Neural Information Processing Systems",
+                      "doi": null,
+                      "arxivId": "1706.03762",
+                      "url": "https://www.semanticscholar.org/paper/204e3073870fae3d05bcbc2f6a8e263d9b72e776",
+                      "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder…",
+                      "citationCount": 103421,
+                      "source": "semantic-scholar"
+                    },
+                    {
+                      "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+                      "authors": [
+                        "Dzmitry Bahdanau",
+                        "Kyunghyun Cho",
+                        "Yoshua Bengio"
+                      ],
+                      "year": 2014,
+                      "venue": "International Conference on Learning Representations",
+                      "doi": null,
+                      "arxivId": "1409.0473",
+                      "url": "http://arxiv.org/abs/1409.0473",
+                      "abstract": "Neural machine translation is a recently proposed approach to machine translation. Unlike the traditional statistical machine translation…",
+                      "citationCount": 28104,
+                      "source": "arxiv"
+                    },
+                    {
+                      "title": "Efficient Attention: Attention with Linear Complexities",
+                      "authors": [
+                        "Zhuoran Shen",
+                        "Mingyuan Zhang",
+                        "Haiyu Zhao"
+                      ],
+                      "year": 2018,
+                      "venue": "arXiv",
+                      "doi": "10.1109/wacv48630.2021.00357",
+                      "arxivId": "1812.01243",
+                      "url": "http://arxiv.org/abs/1812.01243",
+                      "abstract": "Dot-product attention has wide applications in computer vision and natural language processing…",
+                      "citationCount": 412,
+                      "source": "crossref"
+                    }
+                  ],
+                  "sources": {
+                    "arxiv": "ok",
+                    "crossref": "ok",
+                    "semanticScholar": "ok"
+                  },
+                  "retrievedAt": "2026-08-07T09:14:22.117Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required (or payment rejected). The body lists both accepted rails.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequired"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/paper/{id}": {
+      "get": {
+        "operationId": "paperDetail",
+        "summary": "Paper metadata, abstract, TL;DR, and a two-sided citation graph ($0.003)",
+        "description": "Paper metadata, abstract, TL;DR, and a two-sided citation graph\n\nPaid route — $0.003 in USDC. Pay on Base (EVM) or Solana; the 402 challenge lists both rails.",
+        "tags": [
+          "paid"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "A DOI (`10.1038/nature14539` — raw slashes are fine), an arXiv id (`1706.03762` or `arXiv:1706.03762`), a Semantic Scholar paper id, or `CorpusId:…`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10.1038/nature14539"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full metadata, abstract, TL;DR, open-access PDF link, plus the top citing works and the reference list",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "resolvedAs",
+                    "source",
+                    "retrievedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The identifier you passed."
+                    },
+                    "resolvedAs": {
+                      "type": "string",
+                      "description": "How it was resolved upstream, e.g. `DOI:10.1038/nature14539`."
+                    },
+                    "title": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "abstract": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Abstract, falling back to the TL;DR."
+                    },
+                    "tldr": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "year": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "venue": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "publicationDate": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "authors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "externalIds": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "fieldsOfStudy": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "openAccessPdf": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri"
+                    },
+                    "citationGraph": {
+                      "type": "object",
+                      "properties": {
+                        "citationCount": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "referenceCount": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "influentialCitationCount": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "topCitations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        },
+                        "references": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      }
+                    },
+                    "partial": {
+                      "type": "boolean",
+                      "description": "True when the Crossref fallback was used (no citation lists)."
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "semantic-scholar",
+                        "crossref"
+                      ]
+                    },
+                    "retrievedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "example": {
+                  "id": "10.1038/nature14539",
+                  "resolvedAs": "DOI:10.1038/nature14539",
+                  "title": "Deep learning",
+                  "abstract": "Deep learning allows computational models that are composed of multiple processing layers to learn representations of data with multiple levels of abstraction…",
+                  "tldr": "Deep learning discovers intricate structure in large data sets by using backpropagation.",
+                  "year": 2015,
+                  "venue": "Nature",
+                  "publicationDate": "2015-05-27",
+                  "authors": [
+                    "Yann LeCun",
+                    "Yoshua Bengio",
+                    "Geoffrey Hinton"
+                  ],
+                  "externalIds": {
+                    "DOI": "10.1038/nature14539",
+                    "MAG": "2126779391",
+                    "CorpusId": 3074096
+                  },
+                  "fieldsOfStudy": [
+                    "Computer Science",
+                    "Medicine"
+                  ],
+                  "openAccessPdf": null,
+                  "citationGraph": {
+                    "citationCount": 61234,
+                    "referenceCount": 96,
+                    "influentialCitationCount": 4102,
+                    "topCitations": [
+                      {
+                        "title": "Deep Residual Learning for Image Recognition",
+                        "year": 2015,
+                        "doi": null,
+                        "arxivId": "1512.03385",
+                        "citationCount": 180321
+                      }
+                    ],
+                    "references": [
+                      {
+                        "title": "ImageNet Classification with Deep Convolutional Neural Networks",
+                        "year": 2012,
+                        "doi": null,
+                        "arxivId": null,
+                        "citationCount": 108442
+                      }
+                    ]
+                  },
+                  "source": "semantic-scholar",
+                  "retrievedAt": "2026-08-07T09:15:04.882Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required (or payment rejected). The body lists both accepted rails.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequired"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bibliography": {
+      "post": {
+        "operationId": "bibliography",
+        "summary": "Formatted BibTeX and APA entries for a list of DOIs ($0.005)",
+        "description": "Formatted BibTeX and APA entries for a list of DOIs\n\nPaid route — $0.005 in USDC. Pay on Base (EVM) or Solana; the 402 challenge lists both rails.",
+        "tags": [
+          "paid"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "dois"
+                ],
+                "properties": {
+                  "dois": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 25,
+                    "description": "DOIs to format."
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "bibtex",
+                      "apa",
+                      "both"
+                    ],
+                    "default": "both"
+                  }
+                }
+              },
+              "example": {
+                "dois": [
+                  "10.1038/nature14539",
+                  "10.1145/3292500.3330701"
+                ],
+                "format": "both"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paste-ready BibTeX and/or APA 7 references, one entry per DOI",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "format",
+                    "count",
+                    "entries",
+                    "retrievedAt"
+                  ],
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "bibtex",
+                        "apa",
+                        "both"
+                      ]
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "doi",
+                          "status"
+                        ],
+                        "properties": {
+                          "doi": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "error"
+                            ]
+                          },
+                          "bibtex": {
+                            "type": "string",
+                            "description": "BibTeX record from Crossref's transform."
+                          },
+                          "apa": {
+                            "type": "string",
+                            "description": "APA 7 reference built from structured Crossref metadata."
+                          },
+                          "error": {
+                            "type": "string",
+                            "description": "Present when `status` is `error`."
+                          }
+                        }
+                      }
+                    },
+                    "retrievedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "example": {
+                  "format": "both",
+                  "count": 2,
+                  "entries": [
+                    {
+                      "doi": "10.1038/nature14539",
+                      "status": "ok",
+                      "bibtex": "@article{LeCun_2015, title={Deep learning}, volume={521}, ISSN={1476-4687}, url={http://dx.doi.org/10.1038/nature14539}, DOI={10.1038/nature14539}, number={7553}, journal={Nature}, publisher={Springer Science and Business Media LLC}, author={LeCun, Yann and Bengio, Yoshua and Hinton, Geoffrey}, year={2015}, month=may, pages={436-444} }",
+                      "apa": "LeCun, Y., Bengio, Y., & Hinton, G. (2015). Deep learning. Nature, 521(7553), 436-444. https://doi.org/10.1038/nature14539"
+                    },
+                    {
+                      "doi": "10.1145/3292500.3330701",
+                      "status": "error",
+                      "error": "HTTP 404 from api.crossref.org"
+                    }
+                  ],
+                  "retrievedAt": "2026-08-07T09:16:41.003Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required (or payment rejected). The body lists both accepted rails.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequired"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "operationId": "serviceInfo",
+        "summary": "Service metadata, live prices, and active payment rails (free)",
+        "tags": [
+          "free"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Liveness probe (free)",
+        "tags": [
+          "free"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "uptime": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "operationId": "discoveryManifest",
+        "summary": "x402 discovery manifest (free)",
+        "tags": [
+          "free"
+        ],
+        "responses": {
+          "200": {
+            "description": "Manifest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Machine-readable error code."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable description."
+          }
+        }
+      },
+      "PaymentRequirements": {
+        "type": "object",
+        "description": "One accepted payment rail, per the x402 specification.",
+        "required": [
+          "scheme",
+          "network",
+          "maxAmountRequired",
+          "resource",
+          "payTo",
+          "asset"
+        ],
+        "properties": {
+          "scheme": {
+            "type": "string",
+            "enum": [
+              "exact"
+            ]
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "base-sepolia",
+              "base",
+              "solana",
+              "solana-devnet"
+            ],
+            "description": "EVM or Solana network this rail settles on."
+          },
+          "maxAmountRequired": {
+            "type": "string",
+            "description": "Price in USDC base units (6 decimals)."
+          },
+          "resource": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "payTo": {
+            "type": "string",
+            "description": "Receive address (0x… for EVM, base58 for Solana)."
+          },
+          "maxTimeoutSeconds": {
+            "type": "integer"
+          },
+          "asset": {
+            "type": "string",
+            "description": "USDC contract address or SPL mint."
+          },
+          "outputSchema": {
+            "type": "object"
+          },
+          "extra": {
+            "type": "object",
+            "description": "EVM: EIP-712 domain (`name`, `version`). Solana: `feePayer`, the sponsor that pays the SOL network fee."
+          }
+        }
+      },
+      "PaymentRequired": {
+        "type": "object",
+        "required": [
+          "x402Version",
+          "accepts"
+        ],
+        "properties": {
+          "x402Version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "error": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "accepts": {
+            "type": "array",
+            "description": "Both rails: USDC on Base and USDC on Solana.",
+            "items": {
+              "$ref": "#/components/schemas/PaymentRequirements"
+            }
+          }
+        }
+      }
+    }
+  }
+}
