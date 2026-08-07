@@ -18,6 +18,7 @@ import {
   usingSuiteDefaultPayTo,
   type RoutePrices,
 } from "./payments.js";
+import { ROUTE_SCHEMAS } from "./schemas.js";
 import { bibliography, paperDetail, search, UPSTREAMS } from "./service.js";
 
 const require = createRequire(import.meta.url);
@@ -31,15 +32,7 @@ const ROUTES: RoutePrices = {
     price: "$0.002",
     description:
       "Ranked scholarly search across arXiv, Crossref, and Semantic Scholar. Returns merged, de-duplicated papers with authors, venue, DOI, abstract, and citation count.",
-    outputSchema: {
-      type: "object",
-      properties: {
-        query: { type: "string" },
-        count: { type: "integer" },
-        papers: { type: "array", items: { type: "object" } },
-        sources: { type: "object" },
-      },
-    },
+    outputSchema: ROUTE_SCHEMAS["GET /search"],
   },
   // `**` matches the rest of the path, so DOIs keep their raw slashes:
   // /paper/10.1038/nature14539
@@ -47,27 +40,12 @@ const ROUTES: RoutePrices = {
     price: "$0.003",
     description:
       "Paper metadata, abstract, TL;DR, and a two-sided citation graph for a DOI, arXiv id, or Semantic Scholar id.",
-    outputSchema: {
-      type: "object",
-      properties: {
-        title: { type: "string" },
-        abstract: { type: "string" },
-        authors: { type: "array", items: { type: "string" } },
-        citationGraph: { type: "object" },
-      },
-    },
+    outputSchema: ROUTE_SCHEMAS["GET /paper/**"],
   },
   "POST /bibliography": {
     price: "$0.005",
     description: "Formatted BibTeX and APA 7 entries for a list of DOIs (up to 25 per call).",
-    outputSchema: {
-      type: "object",
-      properties: {
-        format: { type: "string" },
-        count: { type: "integer" },
-        entries: { type: "array", items: { type: "object" } },
-      },
-    },
+    outputSchema: ROUTE_SCHEMAS["POST /bibliography"],
   },
 };
 
@@ -97,11 +75,18 @@ app.get("/openapi.json", (_req, res) => {
   res.type("application/json").sendFile(join(root, "openapi.json"));
 });
 
-// Static site.
-app.use(express.static(publicDir));
+// Static site. `index: false` keeps `/` on the JSON handler below — the landing
+// page is served from there only when the caller actually asked for HTML.
+app.use(express.static(publicDir, { index: false }));
 
-// Free: service info.
-app.get("/", (_req, res) => {
+// Free: service info. Browsers and crawlers (Accept: text/html) get the landing
+// page with the origin's title/description/favicon metadata; agents and curl get
+// the JSON contract.
+app.get("/", (req, res) => {
+  if (req.accepts(["json", "html"]) === "html") {
+    res.sendFile(join(publicDir, "index.html"));
+    return;
+  }
   res.json({
     name: "x402-research",
     description:
