@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "x402-research"
+abstract: "Scholarly search over arXiv, Crossref, and Semantic Scholar: papers, citation graphs, formatted bibliographies. Paid per query with x402: USDC on Base or Solana."
+license: Apache-2.0
+repository-code: "https://github.com/nirholas/x402-research"
+url: "https://three.ws"
+authors:
+  - name: three.ws
+    website: "https://three.ws"
