@@ -1,0 +1,23 @@
+{
+  "name": "x402-research",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Scholarly search over arXiv, Crossref and Semantic Scholar with paper lookup and bibliographies, paid per query over x402.",
+  "plugins": [
+    {
+      "name": "x402-research",
+      "source": "./plugins/x402-research",
+      "description": "Scholarly search over arXiv, Crossref and Semantic Scholar with paper lookup and bibliographies, paid per query over x402.",
+      "category": "data",
+      "tags": [
+        "x402",
+        "research",
+        "arxiv",
+        "crossref",
+        "semantic-scholar",
+        "bibliography"
+      ]
+    }
+  ]
+}
