@@ -1,0 +1,19 @@
+{
+  "name": "x402-research",
+  "version": "0.1.0",
+  "description": "Scholarly search over arXiv, Crossref and Semantic Scholar with paper lookup and bibliographies, paid per query over x402.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/x402-research",
+  "homepage": "https://nirholas.github.io/x402-research/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "x402",
+    "research",
+    "arxiv",
+    "crossref",
+    "semantic-scholar",
+    "bibliography"
+  ]
+}
